@@ -225,3 +225,109 @@ Feature: Shall properly compile the "regional_sales" sqlite script variants
             from temp.feature_cfec__scenario_2cf4__sales
             group by region;
             """
+
+    Scenario: "regional_sales" template with trivial test omitting an unnecessary given column
+        Given sql-unit executable is located at $SQL_UNIT_CLI
+        When  a sql-unit project is configured to point to connection URI "sqlite:///:memory:"
+        And   a file "regional_sales.sql" is present in the project directory with content:
+            """
+            /* sql-unit
+
+            Feature: Properly aggregates sales table
+                Scenario: Sales table has trivial entries for "east" and "west" regions, but no "sale_uid" column
+                    Given sales:
+                        | region | amount |
+                        | east   | 10     |
+                        | west   | 20     |
+                    When  script is run
+                    Then result:
+                        | region | num_sales | total_sales |
+                        | east   | 1         | 10          |
+                        | west   | 1         | 20          |
+            */
+            select
+                region,
+                count(*) as num_sales,
+                sum(amount) as total_sales
+            from {{ sales | default("sales") }}
+            group by region
+            """
+        And   sql-unit is executed with arguments "compile regional_sales.sql"
+        Then  sql-unit exits with exit code 0
+        And   sql-unit shall include the text in the output:
+            """
+            create temporary table feature_cfec__scenario_f753__sales (
+                region text,
+                sale_uid text,
+                amount real
+            );
+            """
+        And   sql-unit shall include the text in the output:
+            """
+            insert into temp.feature_cfec__scenario_f753__sales (region, sale_uid, amount) values
+                ('east', null, 10),
+                ('west', null, 20);
+            """
+        And   sql-unit shall include the text in the output:
+            """
+            create temporary table feature_cfec__scenario_f753__result as
+            select
+                region,
+                count(*) as num_sales,
+                sum(amount) as total_sales
+            from temp.feature_cfec__scenario_f753__sales
+            group by region;
+            """
+
+    Scenario: "regional_sales" template with trivial test omitting an untested expected column
+        Given sql-unit executable is located at $SQL_UNIT_CLI
+        When  a sql-unit project is configured to point to connection URI "sqlite:///:memory:"
+        And   a file "regional_sales.sql" is present in the project directory with content:
+            """
+            /* sql-unit
+
+            Feature: Properly aggregates sales table
+                Scenario: Sales table has trivial entries for "east" and "west" regions, but no "sale_uid" column
+                    Given sales:
+                        | region | amount |
+                        | east   | 10     |
+                        | west   | 20     |
+                    When  script is run
+                    Then result:
+                        | region | total_sales |
+                        | east   | 10          |
+                        | west   | 20          |
+            */
+            select
+                region,
+                count(*) as num_sales,
+                sum(amount) as total_sales
+            from {{ sales | default("sales") }}
+            group by region
+            """
+        And   sql-unit is executed with arguments "compile regional_sales.sql"
+        Then  sql-unit exits with exit code 0
+        And   sql-unit shall include the text in the output:
+            """
+            create temporary table feature_cfec__scenario_f753__sales (
+                region text,
+                sale_uid text,
+                amount real
+            );
+            """
+        And   sql-unit shall include the text in the output:
+            """
+            insert into temp.feature_cfec__scenario_f753__sales (region, sale_uid, amount) values
+                ('east', null, 10),
+                ('west', null, 20);
+            """
+        And   sql-unit shall include the text in the output:
+            """
+            create temporary table feature_cfec__scenario_f753__result as
+            select
+                region,
+                count(*) as num_sales,
+                sum(amount) as total_sales
+            from temp.feature_cfec__scenario_f753__sales
+            group by region;
+            """
