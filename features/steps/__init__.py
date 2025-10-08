@@ -7,6 +7,18 @@ from pathlib import Path
 import tempfile
 
 
+@when("a file {string} is present in the project directory with content:")
+def step_impl(context, **kw):
+    assert hasattr(context, "project_dir"), (
+        "Must have project configured before creating file.\n%s" % context.__dict__
+    )
+
+    file_path = context.project_dir / kw.get("string").strip('"')
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    file_path.touch()
+    file_path.write_text(context.text)
+
+
 @given("sql-unit executable is located at $SQL_UNIT_CLI")
 def step_impl(context):
     sql_unit_cli_path = os.environ["SQL_UNIT_CLI"]
@@ -19,7 +31,7 @@ def step_impl(context):
 
 @when("sql-unit is executed with arguments {string}")
 def step_impl(context, **kw):
-    args = shlex.split(kw.get("string"))
+    args = shlex.split(kw.get("string").strip('"'))
 
     result = subprocess.run([context.sql_unit_cli] + args, capture_output=True, text=True)
 
@@ -30,7 +42,7 @@ def step_impl(context, **kw):
 def step_impl(context, **kw):
     with tempfile.TemporaryDirectory() as tmpdir:
         project_dir = Path(tmpdir)
-        connection_uri = kw.get("string")
+        connection_uri = kw.get("string").strip('"')
 
         context.project_dir = project_dir
         config_path = project_dir / ".sql-unit.yaml"
@@ -49,9 +61,17 @@ def step_impl(context, **kw):
 @then("sql-unit shall include {string} in the output")
 def step_impl(context, **kw):
     assert hasattr(context, "sql_unit_result"), "No SQLUnit execution was performed."
-    assert kw.get("string") in context.sql_unit_result.stdout, (
+    assert kw.get("string").strip('"') in context.sql_unit_result.stdout, (
         "Output did not contain %s\nOutput:\n%s"
-        % (kw.get("string"), context.sql_unit_result.stdout)
+        % (kw.get("string").strip('"'), context.sql_unit_result.stdout)
+    )
+
+
+@then("sql-unit shall include the text in the output:")
+def step_impl(context, **kw):
+    assert hasattr(context, "sql_unit_result"), "No SQLUnit execution was performed."
+    assert context.text in context.sql_unit_result.stdout, (
+        "Output did not contain %s\nOutput:\n%s" % (context.text, context.sql_unit_result.stdout)
     )
 
 
