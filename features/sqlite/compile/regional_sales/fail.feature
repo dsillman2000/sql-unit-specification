@@ -1,4 +1,4 @@
-Feature: Shall fail to compile sqlite templates that are invalid
+Feature: Shall fail to compile variants of the "regional_sales" sqlite template that are invalid
 
     Scenario: "regional_sales" template with no tests and no defaults
         Given sql-unit executable is located at $SQL_UNIT_CLI
